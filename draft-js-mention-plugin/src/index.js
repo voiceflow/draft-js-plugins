@@ -80,6 +80,7 @@ export default (config = {}) => {
     positionSuggestions = defaultPositionSuggestions,
     mentionComponent,
     mentionSuggestionsComponent: MentionSuggestionsComponent = MentionSuggestions,
+    mentionSuggestionsPortalComponent,
     entityMutability = 'SEGMENTED',
     mentionTrigger = '@',
     mentionRegExp = defaultRegExp,
@@ -103,7 +104,11 @@ export default (config = {}) => {
     <Mention {...props} theme={theme} mentionComponent={mentionComponent} />
   );
   const DecoratedMentionSuggestionsPortal = props => (
-    <MentionSuggestionsPortal {...props} store={store} />
+    <MentionSuggestionsPortal
+      {...props}
+      store={store}
+      portalComponent={mentionSuggestionsPortalComponent}
+    />
   );
   return {
     MentionSuggestions: DecoratedMentionSuggestionsComponent,

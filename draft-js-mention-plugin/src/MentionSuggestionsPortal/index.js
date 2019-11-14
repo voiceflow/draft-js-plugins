@@ -42,10 +42,12 @@ export default class MentionSuggestionsPortal extends Component {
   }
 
   render() {
+    const PComponent = this.props.portalComponent || 'span';
+
     return (
-      <span className={this.key} ref={this.searchPortalRef}>
+      <PComponent className={this.key} ref={this.searchPortalRef}>
         {this.props.children}
-      </span>
+      </PComponent>
     );
   }
 }
