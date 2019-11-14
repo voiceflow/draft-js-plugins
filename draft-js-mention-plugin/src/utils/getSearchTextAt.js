@@ -13,6 +13,7 @@ export default (blockText: string, position: number, trigger: string) => {
   return {
     begin,
     end,
+    blockText,
     matchingString,
   };
 };

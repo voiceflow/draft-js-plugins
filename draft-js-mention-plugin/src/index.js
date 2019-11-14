@@ -121,7 +121,8 @@ export default (config = {}) => {
         strategy: mentionSuggestionsStrategy(
           mentionTrigger,
           supportWhitespace,
-          mentionRegExp
+          mentionRegExp,
+          mentionSuffix
         ),
         component: DecoratedMentionSuggestionsPortal,
       },

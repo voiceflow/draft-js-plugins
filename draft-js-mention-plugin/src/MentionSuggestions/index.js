@@ -181,7 +181,7 @@ export class MentionSuggestions extends Component {
     activeOffsetKey,
     lastActiveOffsetKey
   ) => {
-    const { matchingString: searchValue } = getSearchText(
+    const { matchingString: searchValue, blockText } = getSearchText(
       editorState,
       selection,
       this.props.mentionTrigger
@@ -192,7 +192,7 @@ export class MentionSuggestions extends Component {
       activeOffsetKey !== lastActiveOffsetKey
     ) {
       this.lastSearchValue = searchValue;
-      this.props.onSearchChange({ value: searchValue });
+      this.props.onSearchChange({ value: searchValue, blockText });
     }
   };
 
