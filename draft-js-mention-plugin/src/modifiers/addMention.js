@@ -6,6 +6,7 @@ const addMention = (
   editorState,
   mention,
   mentionPrefix,
+  mentionSuffix,
   mentionTrigger,
   entityMutability
 ) => {
@@ -32,7 +33,7 @@ const addMention = (
   let mentionReplacedContent = Modifier.replaceText(
     editorState.getCurrentContent(),
     mentionTextSelection,
-    `${mentionPrefix}${mention.name}`,
+    `${mentionPrefix}${mention.name}${mentionSuffix}`,
     null, // no inline style needed
     entityKey
   );

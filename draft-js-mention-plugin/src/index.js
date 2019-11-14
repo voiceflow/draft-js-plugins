@@ -75,6 +75,7 @@ export default (config = {}) => {
   // breaking change. 1px of an increased padding can break a whole layout.
   const {
     mentionPrefix = '',
+    mentionSuffix = '',
     theme = defaultTheme,
     positionSuggestions = defaultPositionSuggestions,
     mentionComponent,
@@ -93,6 +94,7 @@ export default (config = {}) => {
     positionSuggestions,
     mentionTrigger,
     mentionPrefix,
+    mentionSuffix,
   };
   const DecoratedMentionSuggestionsComponent = props => (
     <MentionSuggestionsComponent {...props} {...mentionSearchProps} />

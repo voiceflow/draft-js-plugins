@@ -249,6 +249,7 @@ export class MentionSuggestions extends Component {
       this.props.store.getEditorState(),
       mention,
       this.props.mentionPrefix,
+      this.props.mentionSuffix,
       this.props.mentionTrigger,
       this.props.entityMutability
     );
