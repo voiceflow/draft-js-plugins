@@ -18,7 +18,7 @@ export default class MentionSuggestionsPortal extends Component {
   // UNSAFE_componentWillMount would not fire after componentWillUnmount even though it
   // was still in the DOM, so it wasn't re-registering the offsetkey.
   componentDidMount() {
-    this.props.store.register(this.props.offsetKey);
+    this.props.store.registerPortal(this.props.offsetKey);
     this.updatePortalClientRect(this.props);
 
     // trigger a re-render so the MentionSuggestions becomes active
@@ -30,7 +30,7 @@ export default class MentionSuggestionsPortal extends Component {
   }
 
   componentWillUnmount() {
-    this.props.store.unregister(this.props.offsetKey);
+    this.props.store.unregisterPortal(this.props.offsetKey);
   }
 
   updatePortalClientRect(props) {

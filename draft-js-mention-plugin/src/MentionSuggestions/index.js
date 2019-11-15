@@ -47,22 +47,35 @@ export class MentionSuggestions extends Component {
       // try to get new getPortalClientRect, but the key already was deleted by
       // previous action. (right now, it only can happened when set the mention
       // trigger to be multi-characters which not supported anyway!)
-      if (!this.props.store.getAllSearches().has(this.activeOffsetKey)) {
-        return;
+      if (this.props.store.getAllSearches().has(this.activeOffsetKey)) {
+        const decoratorRect = this.props.store.getPortalClientRect(
+          this.activeOffsetKey
+        );
+        const newStyles = this.props.positionSuggestions({
+          decoratorRect,
+          prevProps,
+          props: this.props,
+          popover: this.popover,
+        });
+        Object.keys(newStyles).forEach(key => {
+          this.popover.style[key] = newStyles[key];
+        });
       }
 
-      const decoratorRect = this.props.store.getPortalClientRect(
-        this.activeOffsetKey
-      );
-      const newStyles = this.props.positionSuggestions({
-        decoratorRect,
-        prevProps,
-        props: this.props,
-        popover: this.popover,
-      });
-      Object.keys(newStyles).forEach(key => {
-        this.popover.style[key] = newStyles[key];
-      });
+      if (this.props.store.getAllMentions().has(this.activeEntityKey)) {
+        const decoratorRect = this.props.store.getMentionClientRect(
+          this.activeEntityKey
+        );
+        const newStyles = this.props.positionSuggestions({
+          decoratorRect,
+          prevProps,
+          props: this.props,
+          popover: this.popover,
+        });
+        Object.keys(newStyles).forEach(key => {
+          this.popover.style[key] = newStyles[key];
+        });
+      }
     }
   }
 
@@ -77,7 +90,7 @@ export class MentionSuggestions extends Component {
       mentionSuffix,
       mentionPrefix,
       mentionTrigger,
-      suggestionsMap = [],
+      suggestionsMap = {},
       entityMutability,
       supportWhitespace,
     } = this.props;
@@ -175,8 +188,9 @@ export class MentionSuggestions extends Component {
       } else if (
         getTypeByTrigger(this.props.mentionTrigger) === entity.getType()
       ) {
-        if (this.lastEntityKey !== entityKey) {
-          this.lastEntityKey = entityKey;
+        if (this.activeEntityKey !== entityKey) {
+          this.activeOffsetKey = null;
+          this.activeEntityKey = entityKey;
 
           this.lastSearchValue = entity.getData().mention.name;
 
@@ -257,6 +271,7 @@ export class MentionSuggestions extends Component {
     if (selectionIsInsideWord.every(isInside => isInside === false))
       return removeList();
 
+    this.activeEntityKey = null;
     const lastActiveOffsetKey = this.activeOffsetKey;
     this.activeOffsetKey = selectionIsInsideWord
       .filter(value => value === true)
@@ -462,7 +477,7 @@ export class MentionSuggestions extends Component {
 
   closeDropdown = () => {
     // make sure none of these callbacks are triggered
-    this.lastEntityKey = null;
+    this.activeEntityKey = null;
     this.props.callbacks.handleReturn = undefined;
     this.props.callbacks.keyBindingFn = undefined;
     this.props.ariaProps.ariaHasPopup = 'false';
@@ -492,6 +507,7 @@ export class MentionSuggestions extends Component {
       positionSuggestions, // eslint-disable-line no-unused-vars
       mentionTrigger, // eslint-disable-line no-unused-vars
       mentionPrefix, // eslint-disable-line no-unused-vars
+      suggestionsMap,
       ...elementProps
     } = this.props;
 
@@ -518,6 +534,7 @@ export class MentionSuggestions extends Component {
           theme={theme}
           searchValue={this.lastSearchValue}
           entryComponent={entryComponent || defaultEntryComponent}
+          suggestionsMap={suggestionsMap}
         />
       ))
     );

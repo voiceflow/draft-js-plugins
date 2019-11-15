@@ -30,15 +30,21 @@ export default (config = {}) => {
     ariaActiveDescendantID: undefined,
   };
 
-  let searches = Map();
+  let searches = new Map();
+  let mentions = new Map();
   let escapedSearch;
-  let clientRectFunctions = Map();
+  let portalClientRectFunctions = new Map();
+  let mentionClientRectFunctions = new Map();
 
   const store = {
     getEditorState: undefined,
     setEditorState: undefined,
-    getPortalClientRect: offsetKey => clientRectFunctions.get(offsetKey)(),
+    getPortalClientRect: offsetKey =>
+      portalClientRectFunctions.get(offsetKey)(),
+    getMentionClientRect: offsetKey =>
+      mentionClientRectFunctions.get(offsetKey)(),
     getAllSearches: () => searches,
+    getAllMentions: () => mentions,
     getSearch: offsetKey => searches.get(offsetKey),
     isEscaped: offsetKey => escapedSearch === offsetKey,
     escapeSearch: offsetKey => {
@@ -49,17 +55,36 @@ export default (config = {}) => {
       escapedSearch = undefined;
     },
 
-    register: offsetKey => {
+    registerPortal: offsetKey => {
       searches = searches.set(offsetKey, offsetKey);
     },
 
     updatePortalClientRect: (offsetKey, func) => {
-      clientRectFunctions = clientRectFunctions.set(offsetKey, func);
+      portalClientRectFunctions = portalClientRectFunctions.set(
+        offsetKey,
+        func
+      );
     },
 
-    unregister: offsetKey => {
+    unregisterPortal: offsetKey => {
       searches = searches.delete(offsetKey);
-      clientRectFunctions = clientRectFunctions.delete(offsetKey);
+      portalClientRectFunctions = portalClientRectFunctions.delete(offsetKey);
+    },
+
+    registerMention: offsetKey => {
+      mentions = mentions.set(offsetKey, offsetKey);
+    },
+
+    updateMentionClientRect: (offsetKey, func) => {
+      mentionClientRectFunctions = mentionClientRectFunctions.set(
+        offsetKey,
+        func
+      );
+    },
+
+    unregisterMention: offsetKey => {
+      mentions = mentions.delete(offsetKey);
+      mentionClientRectFunctions = mentionClientRectFunctions.delete(offsetKey);
     },
 
     getIsOpened: () => searches.size > 0,
@@ -101,7 +126,12 @@ export default (config = {}) => {
     <MentionSuggestionsComponent {...props} {...mentionSearchProps} />
   );
   const DecoratedMention = props => (
-    <Mention {...props} theme={theme} mentionComponent={mentionComponent} />
+    <Mention
+      {...props}
+      theme={theme}
+      store={store}
+      mentionComponent={mentionComponent}
+    />
   );
   const DecoratedMentionSuggestionsPortal = props => (
     <MentionSuggestionsPortal
