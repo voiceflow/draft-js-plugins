@@ -8,7 +8,8 @@ const addMention = (
   mentionPrefix,
   mentionSuffix,
   mentionTrigger,
-  entityMutability
+  entityMutability,
+  activeOffsetKey
 ) => {
   const contentStateWithEntity = editorState
     .getCurrentContent()
@@ -21,7 +22,9 @@ const addMention = (
   const { begin, end } = getSearchText(
     editorState,
     currentSelectionState,
-    mentionTrigger
+    mentionTrigger,
+    mentionSuffix,
+    activeOffsetKey
   );
 
   // get selection of the @mention search text

@@ -19,6 +19,7 @@ export default (config = {}) => {
     keyBindingFn: undefined,
     handleKeyCommand: undefined,
     handleReturn: undefined,
+    handlePastedText: undefined,
     onChange: undefined,
   };
 
@@ -32,13 +33,13 @@ export default (config = {}) => {
   let searches = Map();
   let escapedSearch;
   let clientRectFunctions = Map();
-  let isOpened;
 
   const store = {
     getEditorState: undefined,
     setEditorState: undefined,
     getPortalClientRect: offsetKey => clientRectFunctions.get(offsetKey)(),
     getAllSearches: () => searches,
+    getSearch: offsetKey => searches.get(offsetKey),
     isEscaped: offsetKey => escapedSearch === offsetKey,
     escapeSearch: offsetKey => {
       escapedSearch = offsetKey;
@@ -61,10 +62,7 @@ export default (config = {}) => {
       clientRectFunctions = clientRectFunctions.delete(offsetKey);
     },
 
-    getIsOpened: () => isOpened,
-    setIsOpened: nextIsOpened => {
-      isOpened = nextIsOpened;
-    },
+    getIsOpened: () => searches.size > 0,
   };
 
   // Styles are overwritten instead of merged as merging causes a lot of confusion.
@@ -96,6 +94,8 @@ export default (config = {}) => {
     mentionTrigger,
     mentionPrefix,
     mentionSuffix,
+    mentionRegExp,
+    supportWhitespace,
   };
   const DecoratedMentionSuggestionsComponent = props => (
     <MentionSuggestionsComponent {...props} {...mentionSearchProps} />
@@ -145,6 +145,8 @@ export default (config = {}) => {
       callbacks.keyBindingFn && callbacks.keyBindingFn(keyboardEvent),
     handleReturn: keyboardEvent =>
       callbacks.handleReturn && callbacks.handleReturn(keyboardEvent),
+    handlePastedText: keyboardEvent =>
+      callbacks.handlePastedText && callbacks.handlePastedText(keyboardEvent),
     onChange: editorState => {
       if (callbacks.onChange) return callbacks.onChange(editorState);
       return editorState;

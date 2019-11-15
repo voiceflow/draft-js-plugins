@@ -2,7 +2,7 @@
 
 import escapeRegExp from 'lodash/escapeRegExp';
 
-const findWithRegex = (regex, contentBlock, callback) => {
+const findWithRegex = (trigger, regex, contentBlock, callback) => {
   const contentBlockText = contentBlock.getText();
 
   // exclude entities, when matching
@@ -21,8 +21,10 @@ const findWithRegex = (regex, contentBlock, callback) => {
         if (regex.lastIndex === prevLastIndex) {
           break;
         }
+
         prevLastIndex = regex.lastIndex;
         start = nonEntityStart + matchArr.index;
+
         callback(start, start + matchArr[0].length);
       }
     }
@@ -43,12 +45,9 @@ export default (
         `${escapeRegExp(trigger)}(${regExp}|\\s){0,}${suffixRegexp}`,
         'g'
       )
-    : new RegExp(
-        `(\\s|^)${escapeRegExp(trigger)}${regExp}${suffixRegexp}`,
-        'g'
-      );
+    : new RegExp(`${escapeRegExp(trigger)}${regExp}${suffixRegexp}`, 'g');
 
   return (contentBlock: Object, callback: Function) => {
-    findWithRegex(MENTION_REGEX, contentBlock, callback);
+    findWithRegex(trigger, MENTION_REGEX, contentBlock, callback);
   };
 };

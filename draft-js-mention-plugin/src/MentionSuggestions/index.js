@@ -1,12 +1,14 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { genKey } from 'draft-js';
+import { genKey, Modifier, EditorState } from 'draft-js';
 import escapeRegExp from 'lodash/escapeRegExp';
 import Entry from './Entry';
 import addMention from '../modifiers/addMention';
 import decodeOffsetKey from '../utils/decodeOffsetKey';
 import getSearchText from '../utils/getSearchText';
 import defaultEntryComponent from './Entry/defaultEntryComponent';
+import getTypeByTrigger from '../utils/getTypeByTrigger';
+import mentionSuggestionsStrategy from '../mentionSuggestionsStrategy';
 
 export class MentionSuggestions extends Component {
   static propTypes = {
@@ -26,6 +28,7 @@ export class MentionSuggestions extends Component {
     super(props);
     this.key = genKey();
     this.props.callbacks.onChange = this.onEditorStateChange;
+    this.props.callbacks.handlePastedText = this.onPastedText;
   }
 
   componentDidUpdate(prevProps) {
@@ -67,11 +70,139 @@ export class MentionSuggestions extends Component {
     this.props.callbacks.onChange = undefined;
   }
 
+  onPastedText = text => {
+    const {
+      store,
+      mentionRegExp,
+      mentionSuffix,
+      mentionPrefix,
+      mentionTrigger,
+      suggestionsMap = [],
+      entityMutability,
+      supportWhitespace,
+    } = this.props;
+
+    let editorState = store.getEditorState();
+
+    const newContent = Modifier.replaceText(
+      editorState.getCurrentContent(),
+      editorState.getSelection(),
+      text
+    );
+
+    editorState = EditorState.push(editorState, newContent, 'paste');
+
+    editorState
+      .getCurrentContent()
+      .getBlockMap()
+      .forEach(block =>
+        mentionSuggestionsStrategy(
+          mentionTrigger,
+          supportWhitespace,
+          mentionRegExp,
+          mentionSuffix
+        )(block, (start, end) => {
+          const str = block.getText().substr(0, end);
+
+          const matchingString = (mentionTrigger.length === 0
+            ? str
+            : str.slice(start + mentionTrigger.length)
+          )
+            .replace(mentionTrigger, '')
+            .replace(mentionSuffix, '');
+
+          const mention = suggestionsMap[matchingString];
+          if (mention) {
+            const contentStateWithEntity = editorState
+              .getCurrentContent()
+              .createEntity(
+                getTypeByTrigger(mentionTrigger),
+                entityMutability,
+                { mention }
+              );
+            const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
+
+            const currentSelectionState = editorState.getSelection();
+
+            // get selection of the @mention search text
+            const mentionTextSelection = currentSelectionState.merge({
+              anchorOffset: start,
+              focusOffset: end,
+            });
+
+            const mentionReplacedContent = Modifier.replaceText(
+              editorState.getCurrentContent(),
+              mentionTextSelection,
+              `${mentionPrefix}${mention.name}${mentionSuffix}`,
+              null, // no inline style needed
+              entityKey
+            );
+
+            editorState = EditorState.push(
+              editorState,
+              mentionReplacedContent,
+              'insert-mention'
+            );
+
+            editorState = EditorState.forceSelection(
+              editorState,
+              mentionReplacedContent.getSelectionAfter()
+            );
+          }
+        })
+      );
+
+    this.props.store.setEditorState(editorState);
+
+    return 'handled';
+  };
+
   onEditorStateChange = editorState => {
     const searches = this.props.store.getAllSearches();
+    const selection = editorState.getSelection();
+    const content = editorState.getCurrentContent();
+    const entityKey = content
+      .getBlockForKey(selection.getFocusKey())
+      .getEntityAt(
+        selection.getFocusOffset() - this.props.mentionTrigger.length
+      );
 
-    // if no search portal is active there is no need to show the popover
+    if (entityKey) {
+      const entity = content.getEntity(entityKey);
+
+      if (!editorState.getSelection().hasFocus) {
+        this.closeDropdown();
+      } else if (
+        getTypeByTrigger(this.props.mentionTrigger) === entity.getType()
+      ) {
+        if (this.lastEntityKey !== entityKey) {
+          this.lastEntityKey = entityKey;
+
+          this.lastSearchValue = entity.getData().mention.name;
+
+          this.props.onSearchChange({ value: this.lastSearchValue });
+
+          // make sure the escaped search is reseted in the cursor since the user
+          // already switched to another mention search
+          this.props.store.resetEscapedSearch();
+
+          this.openDropdown();
+
+          // makes sure the focused index is reseted every time a new selection opens
+          // or the selection was moved to another mention search
+          this.setState({ focusedOptionIndex: 0 });
+        }
+
+        return editorState;
+      }
+    }
+
     if (searches.size === 0) {
+      if (this.props.open) {
+        this.closeDropdown();
+      }
+
+      // if no search portal is active there is no need to show the popover
       return editorState;
     }
 
@@ -82,7 +213,6 @@ export class MentionSuggestions extends Component {
     };
 
     // get the current selection
-    const selection = editorState.getSelection();
     const anchorKey = selection.getAnchorKey();
     const anchorOffset = selection.getAnchorOffset();
 
@@ -114,9 +244,7 @@ export class MentionSuggestions extends Component {
       .filter(leave => leave !== undefined)
       .map(
         ({ start, end }) =>
-          (start === 0 &&
-            anchorOffset === this.props.mentionTrigger.length &&
-            plainText.charAt(anchorOffset) !== this.props.mentionTrigger &&
+          (anchorOffset === start + this.props.mentionTrigger.length &&
             new RegExp(
               String.raw({ raw: `${escapeRegExp(this.props.mentionTrigger)}` }),
               'g'
@@ -135,7 +263,7 @@ export class MentionSuggestions extends Component {
       .keySeq()
       .first();
 
-    this.onSearchChange(
+    const newEditorState = this.onSearchChange(
       editorState,
       selection,
       this.activeOffsetKey,
@@ -165,14 +293,12 @@ export class MentionSuggestions extends Component {
       this.lastSelectionIsInsideWord === undefined ||
       !selectionIsInsideWord.equals(this.lastSelectionIsInsideWord)
     ) {
-      this.setState({
-        focusedOptionIndex: 0,
-      });
+      this.setState({ focusedOptionIndex: 0 });
     }
 
     this.lastSelectionIsInsideWord = selectionIsInsideWord;
 
-    return editorState;
+    return newEditorState;
   };
 
   onSearchChange = (
@@ -181,10 +307,12 @@ export class MentionSuggestions extends Component {
     activeOffsetKey,
     lastActiveOffsetKey
   ) => {
-    const { matchingString: searchValue, blockText } = getSearchText(
+    const { commit, matchingString: searchValue } = getSearchText(
       editorState,
       selection,
-      this.props.mentionTrigger
+      this.props.mentionTrigger,
+      this.props.mentionSuffix,
+      activeOffsetKey
     );
 
     if (
@@ -192,8 +320,15 @@ export class MentionSuggestions extends Component {
       activeOffsetKey !== lastActiveOffsetKey
     ) {
       this.lastSearchValue = searchValue;
-      this.props.onSearchChange({ value: searchValue, blockText });
+
+      this.props.onSearchChange({ value: searchValue });
     }
+
+    if (commit && this.props.suggestions[0].name === searchValue) {
+      return this.addMention(editorState, this.props.suggestions[0]);
+    }
+
+    return editorState;
   };
 
   onDownArrow = keyboardEvent => {
@@ -233,11 +368,11 @@ export class MentionSuggestions extends Component {
     this.props.store.setEditorState(this.props.store.getEditorState());
   };
 
-  onMentionSelect = mention => {
+  addMention = (editorState, mention) => {
     // Note: This can happen in case a user typed @xxx (invalid mention) and
     // then hit Enter. Then the mention will be undefined.
     if (!mention) {
-      return;
+      return editorState;
     }
 
     if (this.props.onAddMention) {
@@ -245,30 +380,40 @@ export class MentionSuggestions extends Component {
     }
 
     this.closeDropdown();
-    const newEditorState = addMention(
-      this.props.store.getEditorState(),
+
+    return addMention(
+      editorState,
       mention,
       this.props.mentionPrefix,
       this.props.mentionSuffix,
       this.props.mentionTrigger,
-      this.props.entityMutability
+      this.props.entityMutability,
+      this.activeOffsetKey
     );
-    this.props.store.setEditorState(newEditorState);
+  };
+
+  onMentionSelect = mention => {
+    this.props.store.setEditorState(
+      this.addMention(this.props.store.getEditorState(), mention)
+    );
   };
 
   onMentionFocus = index => {
     const descendant = `mention-option-${this.key}-${index}`;
+
     this.props.ariaProps.ariaActiveDescendantID = descendant;
-    this.setState({
-      focusedOptionIndex: index,
-    });
+
+    this.setState({ focusedOptionIndex: index });
 
     // to force a re-render of the outer component to change the aria props
     this.props.store.setEditorState(this.props.store.getEditorState());
   };
 
   commitSelection = () => {
-    if (!this.props.store.getIsOpened()) {
+    if (
+      !this.props.store.getIsOpened() ||
+      this.props.suggestions[this.state.focusedOptionIndex].id === 'EMPTY'
+    ) {
       return 'not-handled';
     }
 
@@ -286,19 +431,25 @@ export class MentionSuggestions extends Component {
       // arrow down
       if (keyboardEvent.keyCode === 40) {
         this.onDownArrow(keyboardEvent);
+        return 'handled';
       }
       // arrow up
       if (keyboardEvent.keyCode === 38) {
         this.onUpArrow(keyboardEvent);
+        return 'handled';
       }
       // escape
       if (keyboardEvent.keyCode === 27) {
         this.onEscape(keyboardEvent);
+        return 'handled';
       }
       // tab
       if (keyboardEvent.keyCode === 9) {
         this.onTab(keyboardEvent);
+        return 'handled';
       }
+
+      return 'not-handled';
     };
 
     const descendant = `mention-option-${this.key}-${this.state.focusedOptionIndex}`;
@@ -311,6 +462,7 @@ export class MentionSuggestions extends Component {
 
   closeDropdown = () => {
     // make sure none of these callbacks are triggered
+    this.lastEntityKey = null;
     this.props.callbacks.handleReturn = undefined;
     this.props.callbacks.keyBindingFn = undefined;
     this.props.ariaProps.ariaHasPopup = 'false';
