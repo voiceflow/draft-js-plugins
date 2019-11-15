@@ -449,7 +449,7 @@ export class MentionSuggestions extends Component {
         return 'handled';
       }
 
-      return 'not-handled';
+      return null;
     };
 
     const descendant = `mention-option-${this.key}-${this.state.focusedOptionIndex}`;
