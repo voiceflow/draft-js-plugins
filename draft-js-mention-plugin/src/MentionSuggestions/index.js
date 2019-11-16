@@ -1,12 +1,14 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { genKey, Modifier, EditorState } from 'draft-js';
+import getFragmentFromSelection from 'draft-js/lib/getFragmentFromSelection';
 import escapeRegExp from 'lodash/escapeRegExp';
 import Entry from './Entry';
 import addMention from '../modifiers/addMention';
 import decodeOffsetKey from '../utils/decodeOffsetKey';
 import getSearchText from '../utils/getSearchText';
 import defaultEntryComponent from './Entry/defaultEntryComponent';
+import getSelected from '../utils/getSelected';
 import getTypeByTrigger from '../utils/getTypeByTrigger';
 import mentionSuggestionsStrategy from '../mentionSuggestionsStrategy';
 
@@ -29,25 +31,43 @@ export class MentionSuggestions extends Component {
     this.key = genKey();
     this.props.callbacks.onChange = this.onEditorStateChange;
     this.props.callbacks.handlePastedText = this.onPastedText;
+    this.props.callbacks.keyBindingFn = this.defaultKeyBindingFn;
   }
 
   componentDidUpdate(prevProps) {
+    if (this.creatingMention) {
+      return;
+    }
+
     if (this.popover) {
       // In case the list shrinks there should be still an option focused.
       // Note: this might run multiple times and deduct 1 until the condition is
       // not fullfilled anymore.
       const size = this.props.suggestions.length;
-      if (size > 0 && this.state.focusedOptionIndex >= size) {
+      if (size > -1 && this.state.focusedOptionIndex >= size) {
         this.setState({
           focusedOptionIndex: size - 1,
         });
       }
 
-      // Note: this is a simple protection for the error when componentDidUpdate
-      // try to get new getPortalClientRect, but the key already was deleted by
-      // previous action. (right now, it only can happened when set the mention
-      // trigger to be multi-characters which not supported anyway!)
-      if (this.props.store.getAllSearches().has(this.activeOffsetKey)) {
+      if (this.selectionToReplace) {
+        try {
+          const selected = getSelected();
+          const rect = selected.getRangeAt(0).getBoundingClientRect();
+
+          const newStyles = this.props.positionSuggestions({
+            prevProps,
+            decoratorRect: rect,
+            props: this.props,
+            popover: this.popover,
+          });
+          Object.keys(newStyles).forEach(key => {
+            this.popover.style[key] = newStyles[key];
+          });
+        } catch (e) {
+          console.warn(e);
+        }
+      } else if (this.props.store.getAllSearches().has(this.activeOffsetKey)) {
         const decoratorRect = this.props.store.getPortalClientRect(
           this.activeOffsetKey
         );
@@ -60,9 +80,7 @@ export class MentionSuggestions extends Component {
         Object.keys(newStyles).forEach(key => {
           this.popover.style[key] = newStyles[key];
         });
-      }
-
-      if (this.props.store.getAllMentions().has(this.activeEntityKey)) {
+      } else if (this.props.store.getAllMentions().has(this.activeEntityKey)) {
         const decoratorRect = this.props.store.getMentionClientRect(
           this.activeEntityKey
         );
@@ -84,6 +102,10 @@ export class MentionSuggestions extends Component {
   }
 
   onPastedText = text => {
+    if (this.creatingMention) {
+      return null;
+    }
+
     const {
       store,
       mentionRegExp,
@@ -171,9 +193,42 @@ export class MentionSuggestions extends Component {
   };
 
   onEditorStateChange = editorState => {
+    if (this.creatingMention) {
+      return editorState;
+    }
+
+    let eState = editorState;
     const searches = this.props.store.getAllSearches();
-    const selection = editorState.getSelection();
-    const content = editorState.getCurrentContent();
+    const selection = eState.getSelection();
+
+    if (selection.getEndOffset() !== selection.getStartOffset()) {
+      if (selection.hasFocus) {
+        const selected = getFragmentFromSelection(eState);
+        const selectionText = selected
+          ? selected.map(x => x.getText()).join('\n')
+          : '';
+
+        if (selectionText) {
+          this.selectionToReplace = selection;
+          this.selectedBlock = selected;
+          this.lastSearchValue = selectionText.replace(/[^a-zA-Z\d_ :]/g, '');
+
+          this.props.onSearchChange({ value: this.lastSearchValue });
+
+          this.openDropdown();
+
+          this.setState({ focusedOptionIndex: -1 });
+
+          return eState;
+        }
+      } else {
+        eState = EditorState.moveSelectionToEnd(eState);
+      }
+    }
+
+    this.selectionToReplace = null;
+
+    const content = eState.getCurrentContent();
     const entityKey = content
       .getBlockForKey(selection.getFocusKey())
       .getEntityAt(
@@ -183,7 +238,7 @@ export class MentionSuggestions extends Component {
     if (entityKey) {
       const entity = content.getEntity(entityKey);
 
-      if (!editorState.getSelection().hasFocus) {
+      if (!selection.hasFocus) {
         this.closeDropdown();
       } else if (
         getTypeByTrigger(this.props.mentionTrigger) === entity.getType()
@@ -204,10 +259,10 @@ export class MentionSuggestions extends Component {
 
           // makes sure the focused index is reseted every time a new selection opens
           // or the selection was moved to another mention search
-          this.setState({ focusedOptionIndex: 0 });
+          this.setState({ focusedOptionIndex: -1 });
         }
 
-        return editorState;
+        return eState;
       }
     }
 
@@ -217,13 +272,18 @@ export class MentionSuggestions extends Component {
       }
 
       // if no search portal is active there is no need to show the popover
-      return editorState;
+      return eState;
     }
 
     const removeList = () => {
       this.props.store.resetEscapedSearch();
       this.closeDropdown();
-      return editorState;
+
+      if (!selection.getHasFocus()) {
+        return EditorState.moveSelectionToEnd(eState);
+      }
+
+      return eState;
     };
 
     // get the current selection
@@ -242,7 +302,7 @@ export class MentionSuggestions extends Component {
     const leaves = offsetDetails
       .filter(({ blockKey }) => blockKey === anchorKey)
       .map(({ blockKey, decoratorKey }) =>
-        editorState.getBlockTree(blockKey).getIn([decoratorKey])
+        eState.getBlockTree(blockKey).getIn([decoratorKey])
       );
 
     // if all leaves are undefined the popover should be removed
@@ -253,7 +313,7 @@ export class MentionSuggestions extends Component {
     // Checks that the cursor is after the @ character but still somewhere in
     // the word (search term). Setting it to allow the cursor to be left of
     // the @ causes troubles due selection confusion.
-    const plainText = editorState.getCurrentContent().getPlainText();
+    const plainText = eState.getCurrentContent().getPlainText();
     const selectionIsInsideWord = leaves
       .filter(leave => leave !== undefined)
       .map(
@@ -278,8 +338,8 @@ export class MentionSuggestions extends Component {
       .keySeq()
       .first();
 
-    const newEditorState = this.onSearchChange(
-      editorState,
+    eState = this.onSearchChange(
+      eState,
       selection,
       this.activeOffsetKey,
       lastActiveOffsetKey
@@ -308,12 +368,12 @@ export class MentionSuggestions extends Component {
       this.lastSelectionIsInsideWord === undefined ||
       !selectionIsInsideWord.equals(this.lastSelectionIsInsideWord)
     ) {
-      this.setState({ focusedOptionIndex: 0 });
+      this.setState({ focusedOptionIndex: -1 });
     }
 
     this.lastSelectionIsInsideWord = selectionIsInsideWord;
 
-    return newEditorState;
+    return eState;
   };
 
   onSearchChange = (
@@ -322,6 +382,10 @@ export class MentionSuggestions extends Component {
     activeOffsetKey,
     lastActiveOffsetKey
   ) => {
+    if (this.creatingMention) {
+      return editorState;
+    }
+
     const { commit, matchingString: searchValue } = getSearchText(
       editorState,
       selection,
@@ -350,7 +414,7 @@ export class MentionSuggestions extends Component {
     keyboardEvent.preventDefault();
     const newIndex = this.state.focusedOptionIndex + 1;
     this.onMentionFocus(
-      newIndex >= this.props.suggestions.length ? 0 : newIndex
+      newIndex >= this.props.suggestions.length ? -1 : newIndex
     );
   };
 
@@ -359,12 +423,35 @@ export class MentionSuggestions extends Component {
     this.commitSelection();
   };
 
+  onDelete = keyboardEvent => {
+    if (!this.selectionToReplace) {
+      return null;
+    }
+
+    keyboardEvent.preventDefault();
+
+    let editorState = this.props.store.getEditorState();
+
+    const newContentState = Modifier.replaceText(
+      editorState.getCurrentContent(),
+      this.selectionToReplace,
+      ''
+    );
+
+    this.closeDropdown();
+    editorState = EditorState.push(editorState, newContentState, 'addentity');
+
+    this.props.store.setEditorState(editorState);
+
+    return 'handled';
+  };
+
   onUpArrow = keyboardEvent => {
     keyboardEvent.preventDefault();
     if (this.props.suggestions.length > 0) {
       const newIndex = this.state.focusedOptionIndex - 1;
       this.onMentionFocus(
-        newIndex < 0 ? this.props.suggestions.length - 1 : newIndex
+        newIndex < -1 ? this.props.suggestions.length - 1 : newIndex
       );
     }
   };
@@ -398,6 +485,7 @@ export class MentionSuggestions extends Component {
 
     return addMention(
       editorState,
+      this.selectionToReplace,
       mention,
       this.props.mentionPrefix,
       this.props.mentionSuffix,
@@ -424,7 +512,39 @@ export class MentionSuggestions extends Component {
     this.props.store.setEditorState(this.props.store.getEditorState());
   };
 
+  onMentionCreated = mention => {
+    this.onMentionSelect(mention);
+    this.creatingMention = false;
+    this.closeDropdown();
+  };
+
+  onMentionCreationCanceled = () => {
+    this.creatingMention = false;
+    this.closeDropdown();
+  };
+
+  onCreateMention = () => {
+    if (this.props.onCreateMention) {
+      this.creatingMention = true;
+
+      this.props.onCreateMention(
+        this.onMentionCreated,
+        this.onMentionCreationCanceled
+      );
+    }
+  };
+
   commitSelection = () => {
+    if (this.creatingMention) {
+      return 'handled';
+    }
+
+    if (this.state.focusedOptionIndex === -1) {
+      this.onCreateMention();
+
+      return 'handled';
+    }
+
     if (
       !this.props.store.getIsOpened() ||
       this.props.suggestions[this.state.focusedOptionIndex].id === 'EMPTY'
@@ -443,6 +563,10 @@ export class MentionSuggestions extends Component {
     // This better be some registering & unregistering logic. PRs are welcome :)
     this.props.callbacks.handleReturn = this.commitSelection;
     this.props.callbacks.keyBindingFn = keyboardEvent => {
+      if (this.creatingMention) {
+        return null;
+      }
+
       // arrow down
       if (keyboardEvent.keyCode === 40) {
         this.onDownArrow(keyboardEvent);
@@ -464,6 +588,11 @@ export class MentionSuggestions extends Component {
         return 'handled';
       }
 
+      // delete
+      if (keyboardEvent.keyCode === 127 || keyboardEvent.keyCode === 8) {
+        return this.onDelete(keyboardEvent);
+      }
+
       return null;
     };
 
@@ -475,11 +604,25 @@ export class MentionSuggestions extends Component {
     this.props.onOpenChange(true);
   };
 
+  defaultKeyBindingFn = keyboardEvent => {
+    // delete
+    if (keyboardEvent.keyCode === 127 || keyboardEvent.keyCode === 8) {
+      return this.onDelete(keyboardEvent);
+    }
+
+    return null;
+  };
+
   closeDropdown = () => {
-    // make sure none of these callbacks are triggered
+    if (this.creatingMention) {
+      return;
+    }
+
     this.activeEntityKey = null;
+
+    // make sure none of these callbacks are triggered
     this.props.callbacks.handleReturn = undefined;
-    this.props.callbacks.keyBindingFn = undefined;
+    this.props.callbacks.keyBindingFn = this.defaultKeyBindingFn;
     this.props.ariaProps.ariaHasPopup = 'false';
     this.props.ariaProps.ariaExpanded = false;
     this.props.ariaProps.ariaActiveDescendantID = undefined;
@@ -521,6 +664,9 @@ export class MentionSuggestions extends Component {
         ref: element => {
           this.popover = element;
         },
+        onHover: () => this.onMentionFocus(-1),
+        isFocused: this.state.focusedOptionIndex === -1,
+        onCreateMention: this.onCreateMention,
       },
       this.props.suggestions.map((mention, index) => (
         <Entry

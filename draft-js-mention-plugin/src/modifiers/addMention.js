@@ -4,6 +4,7 @@ import getTypeByTrigger from '../utils/getTypeByTrigger';
 
 const addMention = (
   editorState,
+  selectionToReplace,
   mention,
   mentionPrefix,
   mentionSuffix,
@@ -18,42 +19,54 @@ const addMention = (
     });
   const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
 
-  const currentSelectionState = editorState.getSelection();
-  const { begin, end } = getSearchText(
-    editorState,
-    currentSelectionState,
-    mentionTrigger,
-    mentionSuffix,
-    activeOffsetKey
-  );
+  let mentionReplacedContent;
 
-  // get selection of the @mention search text
-  const mentionTextSelection = currentSelectionState.merge({
-    anchorOffset: begin,
-    focusOffset: end,
-  });
-
-  let mentionReplacedContent = Modifier.replaceText(
-    editorState.getCurrentContent(),
-    mentionTextSelection,
-    `${mentionPrefix}${mention.name}${mentionSuffix}`,
-    null, // no inline style needed
-    entityKey
-  );
-
-  // If the mention is inserted at the end, a space is appended right after for
-  // a smooth writing experience.
-  const blockKey = mentionTextSelection.getAnchorKey();
-  const blockSize = editorState
-    .getCurrentContent()
-    .getBlockForKey(blockKey)
-    .getLength();
-  if (blockSize === end) {
-    mentionReplacedContent = Modifier.insertText(
-      mentionReplacedContent,
-      mentionReplacedContent.getSelectionAfter(),
-      ' '
+  if (selectionToReplace) {
+    mentionReplacedContent = Modifier.replaceText(
+      editorState.getCurrentContent(),
+      selectionToReplace,
+      `${mentionPrefix}${mention.name}${mentionSuffix}`,
+      null, // no inline style needed
+      entityKey
     );
+  } else {
+    const currentSelectionState = editorState.getSelection();
+    const { begin, end } = getSearchText(
+      editorState,
+      currentSelectionState,
+      mentionTrigger,
+      mentionSuffix,
+      activeOffsetKey
+    );
+
+    // get selection of the @mention search text
+    const mentionTextSelection = currentSelectionState.merge({
+      anchorOffset: begin,
+      focusOffset: end,
+    });
+
+    mentionReplacedContent = Modifier.replaceText(
+      editorState.getCurrentContent(),
+      mentionTextSelection,
+      `${mentionPrefix}${mention.name}${mentionSuffix}`,
+      null, // no inline style needed
+      entityKey
+    );
+
+    // If the mention is inserted at the end, a space is appended right after for
+    // a smooth writing experience.
+    const blockKey = mentionTextSelection.getAnchorKey();
+    const blockSize = editorState
+      .getCurrentContent()
+      .getBlockForKey(blockKey)
+      .getLength();
+    if (blockSize === end) {
+      mentionReplacedContent = Modifier.insertText(
+        mentionReplacedContent,
+        mentionReplacedContent.getSelectionAfter(),
+        ' '
+      );
+    }
   }
 
   const newEditorState = EditorState.push(
