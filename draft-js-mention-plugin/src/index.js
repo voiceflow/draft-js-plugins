@@ -122,8 +122,14 @@ export default (config = {}) => {
     mentionRegExp,
     supportWhitespace,
   };
-  const DecoratedMentionSuggestionsComponent = props => (
-    <MentionSuggestionsComponent {...props} {...mentionSearchProps} />
+  const DecoratedMentionSuggestionsComponent = React.forwardRef(
+    (props, ref) => (
+      <MentionSuggestionsComponent
+        {...props}
+        {...mentionSearchProps}
+        ref={ref}
+      />
+    )
   );
   const DecoratedMention = props => (
     <Mention

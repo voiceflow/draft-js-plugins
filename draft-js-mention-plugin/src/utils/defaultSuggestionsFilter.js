@@ -11,6 +11,8 @@ const defaultSuggestionsFilter = (
     suggestion => !value || suggestion.name.toLowerCase().includes(value)
   );
 
+  const found = !!filteredSuggestions.length;
+
   if (filteredSuggestions.length > size) {
     filteredSuggestions = filteredSuggestions.slice(0, size);
   } else if (
@@ -29,7 +31,7 @@ const defaultSuggestionsFilter = (
     });
   }
 
-  return filteredSuggestions;
+  return { found, suggestions: filteredSuggestions };
 };
 
 export default defaultSuggestionsFilter;

@@ -10,7 +10,8 @@ const addMention = (
   mentionSuffix,
   mentionTrigger,
   entityMutability,
-  activeOffsetKey
+  activeOffsetKey,
+  spaceAfterNewMention
 ) => {
   const contentStateWithEntity = editorState
     .getCurrentContent()
@@ -55,17 +56,20 @@ const addMention = (
 
     // If the mention is inserted at the end, a space is appended right after for
     // a smooth writing experience.
-    const blockKey = mentionTextSelection.getAnchorKey();
-    const blockSize = editorState
-      .getCurrentContent()
-      .getBlockForKey(blockKey)
-      .getLength();
-    if (blockSize === end) {
-      mentionReplacedContent = Modifier.insertText(
-        mentionReplacedContent,
-        mentionReplacedContent.getSelectionAfter(),
-        ' '
-      );
+    if (spaceAfterNewMention) {
+      const blockKey = mentionTextSelection.getAnchorKey();
+      const blockSize = editorState
+        .getCurrentContent()
+        .getBlockForKey(blockKey)
+        .getLength();
+
+      if (blockSize === end) {
+        mentionReplacedContent = Modifier.insertText(
+          mentionReplacedContent,
+          mentionReplacedContent.getSelectionAfter(),
+          ' '
+        );
+      }
     }
   }
 

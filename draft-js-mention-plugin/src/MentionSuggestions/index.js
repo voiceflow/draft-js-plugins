@@ -127,6 +127,8 @@ export class MentionSuggestions extends Component {
 
     editorState = EditorState.push(editorState, newContent, 'paste');
 
+    const selection = editorState.getSelection();
+
     editorState
       .getCurrentContent()
       .getBlockMap()
@@ -178,14 +180,11 @@ export class MentionSuggestions extends Component {
               mentionReplacedContent,
               'insert-mention'
             );
-
-            editorState = EditorState.forceSelection(
-              editorState,
-              mentionReplacedContent.getSelectionAfter()
-            );
           }
         })
       );
+
+    editorState = EditorState.forceSelection(editorState, selection);
 
     this.props.store.setEditorState(editorState);
 
@@ -202,6 +201,12 @@ export class MentionSuggestions extends Component {
     const selection = eState.getSelection();
 
     if (selection.getEndOffset() !== selection.getStartOffset()) {
+      if (this.prevSelection === selection) {
+        return eState;
+      }
+
+      this.prevSelection = selection;
+
       if (selection.hasFocus) {
         const selected = getFragmentFromSelection(eState);
         const selectionText = selected
@@ -211,7 +216,9 @@ export class MentionSuggestions extends Component {
         if (selectionText) {
           this.selectionToReplace = selection;
           this.selectedBlock = selected;
-          this.lastSearchValue = selectionText.replace(/[^a-zA-Z\d_ :]/g, '');
+          this.lastSearchValue = this.props.searchValueReplaceRegexp
+            ? selectionText.replace(this.props.searchValueReplaceRegexp, '')
+            : selectionText;
 
           this.props.onSearchChange({ value: this.lastSearchValue });
 
@@ -424,11 +431,30 @@ export class MentionSuggestions extends Component {
   };
 
   onDelete = keyboardEvent => {
-    if (!this.selectionToReplace) {
-      return null;
-    }
-
     keyboardEvent.preventDefault();
+
+    if (!this.selectionToReplace) {
+      let editorState = this.props.store.getEditorState();
+
+      let selection = editorState.getSelection();
+
+      selection = selection.merge({
+        focusOffset: selection.getFocusOffset(),
+        anchorOffset: selection.getAnchorOffset() - 1,
+      });
+
+      const newContentState = Modifier.replaceText(
+        editorState.getCurrentContent(),
+        selection,
+        ''
+      );
+
+      editorState = EditorState.push(editorState, newContentState, 'addentity');
+
+      this.props.store.setEditorState(editorState);
+
+      return 'handled';
+    }
 
     let editorState = this.props.store.getEditorState();
 
@@ -491,7 +517,8 @@ export class MentionSuggestions extends Component {
       this.props.mentionSuffix,
       this.props.mentionTrigger,
       this.props.entityMutability,
-      this.activeOffsetKey
+      this.activeOffsetKey,
+      this.props.spaceAfterNewMention
     );
   };
 
@@ -501,12 +528,16 @@ export class MentionSuggestions extends Component {
     );
   };
 
-  onMentionFocus = index => {
+  setFocus = index => {
     const descendant = `mention-option-${this.key}-${index}`;
 
     this.props.ariaProps.ariaActiveDescendantID = descendant;
 
     this.setState({ focusedOptionIndex: index });
+  };
+
+  onMentionFocus = index => {
+    this.setFocus(index);
 
     // to force a re-render of the outer component to change the aria props
     this.props.store.setEditorState(this.props.store.getEditorState());
