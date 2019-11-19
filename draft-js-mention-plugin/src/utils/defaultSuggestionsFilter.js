@@ -15,11 +15,7 @@ const defaultSuggestionsFilter = (
 
   if (filteredSuggestions.length > size) {
     filteredSuggestions = filteredSuggestions.slice(0, size);
-  } else if (
-    showNotMatched &&
-    filteredSuggestions.length < size &&
-    suggestions.length > size
-  ) {
+  } else if (showNotMatched && filteredSuggestions.length < size) {
     suggestions.find(suggestion => {
       if (!filteredSuggestions.find(({ name }) => suggestion.name === name)) {
         filteredSuggestions = [...filteredSuggestions, suggestion];

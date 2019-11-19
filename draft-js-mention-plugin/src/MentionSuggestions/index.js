@@ -222,9 +222,9 @@ export class MentionSuggestions extends Component {
 
           this.props.onSearchChange({ value: this.lastSearchValue });
 
-          this.openDropdown();
-
-          this.setState({ focusedOptionIndex: -1 });
+          if (!this.props.open) {
+            this.openDropdown();
+          }
 
           return eState;
         }
@@ -266,7 +266,7 @@ export class MentionSuggestions extends Component {
 
           // makes sure the focused index is reseted every time a new selection opens
           // or the selection was moved to another mention search
-          this.setState({ focusedOptionIndex: -1 });
+          this.setState({ focusedOptionIndex: 0 });
         }
 
         return eState;
@@ -577,8 +577,9 @@ export class MentionSuggestions extends Component {
     }
 
     if (
-      !this.props.store.getIsOpened() ||
-      this.props.suggestions[this.state.focusedOptionIndex].id === 'EMPTY'
+      !this.selectionToReplace &&
+      (!this.props.store.getIsOpened() ||
+        this.props.suggestions[this.state.focusedOptionIndex].id === 'EMPTY')
     ) {
       return 'not-handled';
     }
