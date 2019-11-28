@@ -438,6 +438,12 @@ export class MentionSuggestions extends Component {
 
       let selection = editorState.getSelection();
 
+      const anchorOffset = selection.getAnchorOffset();
+
+      if (anchorOffset === 0) {
+        return 'handled';
+      }
+
       selection = selection.merge({
         focusOffset: selection.getFocusOffset(),
         anchorOffset: selection.getAnchorOffset() - 1,
