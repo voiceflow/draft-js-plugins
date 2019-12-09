@@ -552,16 +552,29 @@ export class MentionSuggestions extends Component {
   onMentionCreated = mention => {
     this.onMentionSelect(mention);
     this.creatingMention = false;
+    this.selectionBeforeCreateMention = null;
     this.closeDropdown();
   };
 
   onMentionCreationCanceled = () => {
+    this.props.store.setEditorState(
+      EditorState.forceSelection(
+        this.props.store.getEditorState(),
+        this.selectionBeforeCreateMention
+      )
+    );
+
     this.creatingMention = false;
+    this.selectionBeforeCreateMention = null;
     this.closeDropdown();
   };
 
   onCreateMention = () => {
     if (this.props.onCreateMention) {
+      this.selectionBeforeCreateMention = this.props.store
+        .getEditorState()
+        .getSelection();
+
       this.creatingMention = true;
 
       this.props.onCreateMention(
