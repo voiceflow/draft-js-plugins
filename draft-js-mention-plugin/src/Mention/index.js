@@ -46,6 +46,11 @@ export default class Mention extends Component {
   }
 
   updateMentionClientRect(props) {
+    if (this.props.entityKey !== props.entityKey) {
+      this.props.store.unregisterMention(this.props.entityKey);
+      this.props.store.registerMention(props.entityKey);
+    }
+
     this.props.store.updateMentionClientRect(props.entityKey, () =>
       this.mentionPortal.getBoundingClientRect()
     );

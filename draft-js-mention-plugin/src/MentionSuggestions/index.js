@@ -52,12 +52,9 @@ export class MentionSuggestions extends Component {
 
       if (this.selectionToReplace) {
         try {
-          const selected = getSelected();
-          const rect = selected.getRangeAt(0).getBoundingClientRect();
-
           const newStyles = this.props.positionSuggestions({
             prevProps,
-            decoratorRect: rect,
+            decoratorRect: this.selectionToReplaceRect,
             props: this.props,
             popover: this.popover,
           });
@@ -222,6 +219,10 @@ export class MentionSuggestions extends Component {
 
           this.props.onSearchChange({ value: this.lastSearchValue });
 
+          this.selectionToReplaceRect = getSelected()
+            .getRangeAt(0)
+            .getBoundingClientRect();
+
           if (!this.props.open) {
             this.openDropdown();
           }
@@ -233,7 +234,10 @@ export class MentionSuggestions extends Component {
       }
     }
 
-    this.selectionToReplace = null;
+    if (!this.props.open) {
+      this.selectionToReplace = null;
+      this.selectionToReplaceRect = null;
+    }
 
     const content = eState.getCurrentContent();
     const entityKey = content
@@ -252,6 +256,8 @@ export class MentionSuggestions extends Component {
       ) {
         if (this.activeEntityKey !== entityKey) {
           this.activeOffsetKey = null;
+          this.selectionToReplace = null;
+          this.selectionToReplaceRect = null;
           this.activeEntityKey = entityKey;
 
           this.lastSearchValue = entity.getData().mention.name;
@@ -339,6 +345,9 @@ export class MentionSuggestions extends Component {
       return removeList();
 
     this.activeEntityKey = null;
+    this.selectionToReplace = null;
+    this.selectionToReplaceRect = null;
+
     const lastActiveOffsetKey = this.activeOffsetKey;
     this.activeOffsetKey = selectionIsInsideWord
       .filter(value => value === true)
@@ -515,9 +524,14 @@ export class MentionSuggestions extends Component {
 
     this.closeDropdown();
 
+    const selectionToReplace = this.selectionToReplace;
+
+    this.selectionToReplace = null;
+    this.selectionToReplaceRect = null;
+
     return addMention(
       editorState,
-      this.selectionToReplace,
+      selectionToReplace,
       mention,
       this.props.mentionPrefix,
       this.props.mentionSuffix,
@@ -552,6 +566,8 @@ export class MentionSuggestions extends Component {
   onMentionCreated = mention => {
     this.onMentionSelect(mention);
     this.creatingMention = false;
+    this.selectionToReplace = null;
+    this.selectionToReplaceRect = null;
     this.selectionBeforeCreateMention = null;
     this.closeDropdown();
   };
@@ -565,6 +581,8 @@ export class MentionSuggestions extends Component {
     );
 
     this.creatingMention = false;
+    this.selectionToReplace = null;
+    this.selectionToReplaceRect = null;
     this.selectionBeforeCreateMention = null;
     this.closeDropdown();
   };

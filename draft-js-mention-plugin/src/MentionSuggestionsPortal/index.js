@@ -34,6 +34,11 @@ export default class MentionSuggestionsPortal extends Component {
   }
 
   updatePortalClientRect(props) {
+    if (this.props.offsetKey !== props.offsetKey) {
+      this.props.store.unregisterPortal(this.props.offsetKey);
+      this.props.store.registerPortal(props.offsetKey);
+    }
+
     this.props.store.updatePortalClientRect(props.offsetKey, () =>
       this.searchPortal.getBoundingClientRect()
     );

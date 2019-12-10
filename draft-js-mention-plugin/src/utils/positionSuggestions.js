@@ -13,6 +13,8 @@ const getRelativeParent = element => {
   return getRelativeParent(element.parentElement);
 };
 
+const WINDOW_MARGIN = 20;
+
 const positionSuggestions = ({ decoratorRect, popover, props }) => {
   const relativeParent = getRelativeParent(popover.parentElement);
   const relativeRect = {};
@@ -34,8 +36,15 @@ const positionSuggestions = ({ decoratorRect, popover, props }) => {
     relativeRect.left = decoratorRect.left;
   }
 
-  const left = relativeRect.left + relativeRect.scrollLeft;
-  const top = relativeRect.top + relativeRect.scrollTop;
+  let left = relativeRect.left + relativeRect.scrollLeft;
+  let top = relativeRect.top + relativeRect.scrollTop;
+
+  if (left + popover.clientWidth > window.innerWidth - WINDOW_MARGIN) {
+    left = window.innerWidth - popover.clientWidth - WINDOW_MARGIN;
+  }
+  if (top + popover.clientHeight > window.innerHeight - WINDOW_MARGIN) {
+    top = decoratorRect.top - popover.clientHeight;
+  }
 
   let transform;
   let transition;
