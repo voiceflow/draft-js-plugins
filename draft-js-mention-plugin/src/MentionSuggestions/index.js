@@ -384,7 +384,7 @@ export class MentionSuggestions extends Component {
       this.lastSelectionIsInsideWord === undefined ||
       !selectionIsInsideWord.equals(this.lastSelectionIsInsideWord)
     ) {
-      this.setState({ focusedOptionIndex: -1 });
+      this.setState({ focusedOptionIndex: this.props.creatable ? -1 : 0 });
     }
 
     this.lastSelectionIsInsideWord = selectionIsInsideWord;
@@ -429,8 +429,10 @@ export class MentionSuggestions extends Component {
   onDownArrow = keyboardEvent => {
     keyboardEvent.preventDefault();
     const newIndex = this.state.focusedOptionIndex + 1;
+    const initialIndex = this.props.creatable ? -1 : 0;
+
     this.onMentionFocus(
-      newIndex >= this.props.suggestions.length ? -1 : newIndex
+      newIndex >= this.props.suggestions.length ? initialIndex : newIndex
     );
   };
 
@@ -491,8 +493,10 @@ export class MentionSuggestions extends Component {
     keyboardEvent.preventDefault();
     if (this.props.suggestions.length > 0) {
       const newIndex = this.state.focusedOptionIndex - 1;
+      const initialIndex = this.props.creatable ? -1 : 0;
+
       this.onMentionFocus(
-        newIndex < -1 ? this.props.suggestions.length - 1 : newIndex
+        newIndex < initialIndex ? this.props.suggestions.length - 1 : newIndex
       );
     }
   };
