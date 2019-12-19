@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { genKey, Modifier, EditorState } from 'draft-js';
+import { genKey, EditorState } from 'draft-js';
 import getFragmentFromSelection from 'draft-js/lib/getFragmentFromSelection';
 import escapeRegExp from 'lodash/escapeRegExp';
 import Entry from './Entry';
@@ -10,7 +10,6 @@ import getSearchText from '../utils/getSearchText';
 import defaultEntryComponent from './Entry/defaultEntryComponent';
 import getSelected from '../utils/getSelected';
 import getTypeByTrigger from '../utils/getTypeByTrigger';
-import mentionSuggestionsStrategy from '../mentionSuggestionsStrategy';
 
 export class MentionSuggestions extends Component {
   static propTypes = {
@@ -30,7 +29,6 @@ export class MentionSuggestions extends Component {
     super(props);
     this.key = genKey();
     this.props.callbacks.onChange = this.onEditorStateChange;
-    this.props.callbacks.handlePastedText = this.onPastedText;
     this.props.callbacks.keyBindingFn = this.defaultKeyBindingFn;
   }
 
@@ -97,96 +95,6 @@ export class MentionSuggestions extends Component {
   componentWillUnmount() {
     this.props.callbacks.onChange = undefined;
   }
-
-  onPastedText = text => {
-    if (this.creatingMention) {
-      return null;
-    }
-
-    const {
-      store,
-      mentionRegExp,
-      mentionSuffix,
-      mentionPrefix,
-      mentionTrigger,
-      suggestionsMap = {},
-      entityMutability,
-      supportWhitespace,
-    } = this.props;
-
-    let editorState = store.getEditorState();
-
-    const newContent = Modifier.replaceText(
-      editorState.getCurrentContent(),
-      editorState.getSelection(),
-      text
-    );
-
-    editorState = EditorState.push(editorState, newContent, 'paste');
-
-    const selection = editorState.getSelection();
-
-    editorState
-      .getCurrentContent()
-      .getBlockMap()
-      .forEach(block =>
-        mentionSuggestionsStrategy(
-          mentionTrigger,
-          supportWhitespace,
-          mentionRegExp,
-          mentionSuffix
-        )(block, (start, end) => {
-          const str = block.getText().substr(0, end);
-
-          const matchingString = (mentionTrigger.length === 0
-            ? str
-            : str.slice(start + mentionTrigger.length)
-          )
-            .replace(mentionTrigger, '')
-            .replace(mentionSuffix, '');
-
-          const mention = suggestionsMap[matchingString];
-          if (mention) {
-            const contentStateWithEntity = editorState
-              .getCurrentContent()
-              .createEntity(
-                getTypeByTrigger(mentionTrigger),
-                entityMutability,
-                { mention }
-              );
-            const entityKey = contentStateWithEntity.getLastCreatedEntityKey();
-
-            const currentSelectionState = editorState.getSelection();
-
-            // get selection of the @mention search text
-            const mentionTextSelection = currentSelectionState.merge({
-              anchorOffset: start,
-              focusOffset: end,
-            });
-
-            const mentionReplacedContent = Modifier.replaceText(
-              editorState.getCurrentContent(),
-              mentionTextSelection,
-              `${mentionPrefix}${mention.name}${mentionSuffix}`,
-              null, // no inline style needed
-              entityKey
-            );
-
-            editorState = EditorState.push(
-              editorState,
-              mentionReplacedContent,
-              'insert-mention'
-            );
-          }
-        })
-      );
-
-    editorState = EditorState.forceSelection(editorState, selection);
-
-    this.props.store.setEditorState(editorState);
-
-    return 'handled';
-  };
 
   onEditorStateChange = editorState => {
     if (this.creatingMention) {
@@ -441,50 +349,8 @@ export class MentionSuggestions extends Component {
     this.commitSelection();
   };
 
-  onDelete = keyboardEvent => {
-    keyboardEvent.preventDefault();
-
-    if (!this.selectionToReplace) {
-      let editorState = this.props.store.getEditorState();
-
-      let selection = editorState.getSelection();
-
-      const anchorOffset = selection.getAnchorOffset();
-
-      if (anchorOffset === 0) {
-        return 'handled';
-      }
-
-      selection = selection.merge({
-        focusOffset: selection.getFocusOffset(),
-        anchorOffset: selection.getAnchorOffset() - 1,
-      });
-
-      const newContentState = Modifier.replaceText(
-        editorState.getCurrentContent(),
-        selection,
-        ''
-      );
-
-      editorState = EditorState.push(editorState, newContentState, 'addentity');
-
-      this.props.store.setEditorState(editorState);
-
-      return 'handled';
-    }
-
-    let editorState = this.props.store.getEditorState();
-
-    const newContentState = Modifier.replaceText(
-      editorState.getCurrentContent(),
-      this.selectionToReplace,
-      ''
-    );
-
+  onDelete = () => {
     this.closeDropdown();
-    editorState = EditorState.push(editorState, newContentState, 'addentity');
-
-    this.props.store.setEditorState(editorState);
 
     return 'handled';
   };
