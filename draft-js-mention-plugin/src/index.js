@@ -87,7 +87,7 @@ export default (config = {}) => {
       mentionClientRectFunctions = mentionClientRectFunctions.delete(offsetKey);
     },
 
-    getIsOpened: () => searches.size > 0,
+    getIsOpenedSearches: () => searches.size > 0,
   };
 
   // Styles are overwritten instead of merged as merging causes a lot of confusion.
