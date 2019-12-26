@@ -484,9 +484,10 @@ export class MentionSuggestions extends Component {
     }
 
     if (
-      (!this.selectionToReplace && !this.props.store.getAllMentions().size,
-      !this.props.store.getIsOpenedSearches() ||
-        this.props.suggestions[this.state.focusedOptionIndex].id === 'EMPTY')
+      (!this.selectionToReplace &&
+        !this.props.store.getAllMentions().size &&
+        !this.props.store.getIsOpenedSearches()) ||
+      this.props.suggestions[this.state.focusedOptionIndex].id === 'EMPTY'
     ) {
       return 'not-handled';
     }
