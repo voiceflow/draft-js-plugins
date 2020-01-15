@@ -19,6 +19,11 @@ export class MentionSuggestions extends Component {
     entryComponent: PropTypes.func,
     onAddMention: PropTypes.func,
     suggestions: PropTypes.array.isRequired,
+    suggestOnSelection: PropTypes.bool,
+  };
+
+  static defaultProps = {
+    suggestOnSelection: true,
   };
 
   state = {
@@ -105,7 +110,10 @@ export class MentionSuggestions extends Component {
     const searches = this.props.store.getAllSearches();
     const selection = eState.getSelection();
 
-    if (selection.getEndOffset() !== selection.getStartOffset()) {
+    if (
+      this.props.suggestOnSelection &&
+      selection.getEndOffset() !== selection.getStartOffset()
+    ) {
       if (this.prevSelection === selection) {
         return eState;
       }
