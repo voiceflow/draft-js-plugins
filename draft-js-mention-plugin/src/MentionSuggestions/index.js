@@ -162,7 +162,7 @@ export class MentionSuggestions extends Component {
         selection.getFocusOffset() - this.props.mentionTrigger.length
       );
 
-    if (entityKey) {
+    if (entityKey && !this.props.store.isEscaped(entityKey)) {
       const entity = content.getEntity(entityKey);
 
       if (!selection.hasFocus) {
@@ -193,6 +193,8 @@ export class MentionSuggestions extends Component {
 
         return eState;
       }
+    } else if (!entityKey) {
+      this.props.store.resetEscapedSearch();
     }
 
     if (searches.size === 0) {
@@ -378,11 +380,16 @@ export class MentionSuggestions extends Component {
   onEscape = keyboardEvent => {
     keyboardEvent.preventDefault();
 
-    const activeOffsetKey = this.lastSelectionIsInsideWord
-      .filter(value => value === true)
-      .keySeq()
-      .first();
-    this.props.store.escapeSearch(activeOffsetKey);
+    if (this.lastSelectionIsInsideWord) {
+      const activeOffsetKey = this.lastSelectionIsInsideWord
+        .filter(value => value === true)
+        .keySeq()
+        .first();
+      this.props.store.escapeSearch(activeOffsetKey);
+    } else if (this.activeEntityKey) {
+      this.props.store.escapeSearch(this.activeEntityKey);
+    }
+
     this.closeDropdown();
 
     // to force a re-render of the outer component to change the aria props
@@ -407,7 +414,7 @@ export class MentionSuggestions extends Component {
     this.selectionToReplace = null;
     this.selectionToReplaceRect = null;
 
-    return addMention(
+    const nextEditorState = addMention(
       editorState,
       selectionToReplace,
       mention,
@@ -418,6 +425,18 @@ export class MentionSuggestions extends Component {
       this.activeOffsetKey,
       this.props.spaceAfterNewMention
     );
+
+    const entityKey = nextEditorState
+      .getCurrentContent()
+      .getBlockForKey(nextEditorState.getSelection().getFocusKey())
+      .getEntityAt(
+        nextEditorState.getSelection().getFocusOffset() -
+          this.props.mentionTrigger.length
+      );
+
+    this.props.store.escapeSearch(entityKey);
+
+    return nextEditorState;
   };
 
   onMentionSelect = mention => {
