@@ -1,46 +1,30 @@
-/* eslint-disable react/no-children-prop */
-import React, { Component } from 'react';
+import React from 'react';
 import { RichUtils } from 'draft-js';
-import clsx from 'clsx';
 
-export default ({ style, children }) =>
-  class InlineStyleButton extends Component {
-    toggleStyle = event => {
-      event.preventDefault();
-      this.props.setEditorState(
-        RichUtils.toggleInlineStyle(this.props.getEditorState(), style)
-      );
-    };
+export default ({ style }) => ({
+  children,
+  setEditorState,
+  getEditorState,
+}) => {
+  const onClick = React.useCallback(e => {
+    e.preventDefault();
 
-    preventBubblingUp = event => {
-      event.preventDefault();
-    };
+    setEditorState(RichUtils.toggleInlineStyle(getEditorState(), style));
+  }, []);
 
-    // we check if this.props.getEditorstate is undefined first in case the button is rendered before the editor
-    styleIsActive = () =>
-      this.props.getEditorState &&
-      this.props
-        .getEditorState()
-        .getCurrentInlineStyle()
-        .has(style);
+  const onMouseDown = React.useCallback(e => {
+    e.preventDefault();
+  }, []);
 
-    render() {
-      const { theme } = this.props;
-      const className = this.styleIsActive()
-        ? clsx(theme.button, theme.active)
-        : theme.button;
-      return (
-        <div
-          className={theme.buttonWrapper}
-          onMouseDown={this.preventBubblingUp}
-        >
-          <button
-            className={className}
-            onClick={this.toggleStyle}
-            type="button"
-            children={children}
-          />
-        </div>
-      );
+  const isActive = React.useMemo(() => {
+    if (!getEditorState) {
+      return false;
     }
-  };
+
+    return getEditorState()
+      .getCurrentInlineStyle()
+      .has(style);
+  }, [getEditorState && getEditorState()]);
+
+  return children({ onClick, isActive, onMouseDown });
+};

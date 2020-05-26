@@ -1,6 +1,6 @@
 {
-  "name": "draft-js-static-toolbar-plugin",
-  "version": "3.0.1",
+  "name": "@voiceflow/draft-js-static-toolbar-plugin",
+  "version": "3.3.16",
   "description": "Static Toolbar Plugin for DraftJS",
   "author": {
     "name": "Julian Krispel",
@@ -8,10 +8,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/draft-js-plugins/draft-js-plugins.git"
+    "url": "https://github.com/voiceflow/draft-js-plugins.git"
   },
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
   "files": [
     "lib"
   ],
@@ -27,19 +28,17 @@
   ],
   "scripts": {
     "clean": "../node_modules/.bin/rimraf lib",
-    "build": "yarn clean && yarn build:js && yarn build:css",
+    "build": "yarn clean && yarn build:js && yarn build:ts",
     "build:js": "../node_modules/.bin/rollup --config ../rollup.config.js",
-    "build:css": "node ../scripts/build-css.js $(pwd)",
+    "build:ts": "../node_modules/.bin/cpx src/*.d.ts lib/",
     "prepublish": "yarn build"
   },
   "license": "MIT",
-  "dependencies": {
-    "draft-js-buttons": "^2.0.1",
-    "prop-types": "^15.5.8"
-  },
+  "dependencies": {},
   "peerDependencies": {
+    "@voiceflow/draft-js-buttons": "3.3.15",
     "draft-js": "^0.10.1 || ^0.11.0",
-    "react": "^15.5.0 || ^16.0.0-rc",
-    "react-dom": "^15.5.0 || ^16.0.0-rc"
+    "draft-js-plugins-editor": "3.0.0",
+    "react": "^16.3.0"
   }
 }

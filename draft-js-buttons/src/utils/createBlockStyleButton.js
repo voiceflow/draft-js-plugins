@@ -1,52 +1,35 @@
-/* eslint-disable react/no-children-prop */
-import React, { Component } from 'react';
+import React from 'react';
 import { RichUtils } from 'draft-js';
-import clsx from 'clsx';
 
-export default ({ blockType, children }) =>
-  class BlockStyleButton extends Component {
-    toggleStyle = event => {
-      event.preventDefault();
-      this.props.setEditorState(
-        RichUtils.toggleBlockType(this.props.getEditorState(), blockType)
-      );
-    };
+export default ({ blockType }) => ({
+  children,
+  setEditorState,
+  getEditorState,
+}) => {
+  const onClick = React.useCallback(e => {
+    e.preventDefault();
 
-    preventBubblingUp = event => {
-      event.preventDefault();
-    };
+    setEditorState(RichUtils.toggleBlockType(getEditorState(), blockType));
+  }, []);
 
-    blockTypeIsActive = () => {
-      // if the button is rendered before the editor
-      if (!this.props.getEditorState) {
-        return false;
-      }
+  const onMouseDown = React.useCallback(e => {
+    e.preventDefault();
+  }, []);
 
-      const editorState = this.props.getEditorState();
-      const type = editorState
-        .getCurrentContent()
-        .getBlockForKey(editorState.getSelection().getStartKey())
-        .getType();
-      return type === blockType;
-    };
-
-    render() {
-      const { theme } = this.props;
-      const className = this.blockTypeIsActive()
-        ? clsx(theme.button, theme.active)
-        : theme.button;
-      return (
-        <div
-          className={theme.buttonWrapper}
-          onMouseDown={this.preventBubblingUp}
-        >
-          <button
-            className={className}
-            onClick={this.toggleStyle}
-            type="button"
-            children={children}
-          />
-        </div>
-      );
+  const isActive = React.useMemo(() => {
+    if (!getEditorState) {
+      return false;
     }
-  };
+
+    const editorState = getEditorState();
+
+    const type = editorState
+      .getCurrentContent()
+      .getBlockForKey(editorState.getSelection().getStartKey())
+      .getType();
+
+    return type === blockType;
+  }, [getEditorState && getEditorState()]);
+
+  return children({ onClick, isActive, onMouseDown });
+};

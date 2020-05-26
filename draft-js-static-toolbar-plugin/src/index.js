@@ -1,17 +1,11 @@
 import React from 'react';
 import createStore from './utils/createStore';
 import Toolbar from './components/Toolbar';
-import Separator from './components/Separator';
-import { defaultTheme } from './theme.js';
 
-export default (config = {}) => {
+export default () => {
   const store = createStore({});
 
-  const { theme = defaultTheme } = config;
-
-  const StaticToolbar = props => (
-    <Toolbar {...props} store={store} theme={theme} />
-  );
+  const StaticToolbar = props => <Toolbar {...props} store={store} />;
 
   return {
     initialize: ({ getEditorState, setEditorState }) => {
@@ -22,10 +16,10 @@ export default (config = {}) => {
     // Re-Render the text-toolbar on selection change
     onChange: editorState => {
       store.updateItem('selection', editorState.getSelection());
+
       return editorState;
     },
+
     Toolbar: StaticToolbar,
   };
 };
-
-export { Separator };

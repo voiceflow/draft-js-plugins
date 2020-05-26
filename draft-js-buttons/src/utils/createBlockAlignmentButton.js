@@ -1,37 +1,17 @@
-/* eslint-disable react/no-children-prop */
-import React, { Component } from 'react';
-import clsx from 'clsx';
+import React from 'react';
 
-export default ({ alignment, children }) =>
-  class BlockAlignmentButton extends Component {
-    activate = event => {
-      event.preventDefault();
-      this.props.setAlignment({ alignment });
-    };
+export default options => ({ alignment, children, setAlignment }) => {
+  const onClick = React.useCallback(e => {
+    e.preventDefault();
 
-    preventBubblingUp = event => {
-      event.preventDefault();
-    };
+    setAlignment(options.alignment);
+  }, []);
 
-    isActive = () => this.props.alignment === alignment;
+  const onMouseDown = React.useCallback(e => {
+    e.preventDefault();
+  }, []);
 
-    render() {
-      const { theme } = this.props;
-      const className = this.isActive()
-        ? clsx(theme.button, theme.active)
-        : theme.button;
-      return (
-        <div
-          className={theme.buttonWrapper}
-          onMouseDown={this.preventBubblingUp}
-        >
-          <button
-            className={className}
-            onClick={this.activate}
-            type="button"
-            children={children}
-          />
-        </div>
-      );
-    }
-  };
+  const isActive = options.alignment === alignment;
+
+  return children({ onClick, isActive, onMouseDown });
+};

@@ -1,18 +1,16 @@
-import { EditorState } from "draft-js";
-import { ComponentType, ReactNode } from "react";
+import { EditorState, DraftBlockType } from 'draft-js';
+import { ComponentType, ReactNode, MouseEventHandler } from 'react';
 
-export interface DraftJsButtonTheme {
-  // CSS classes to apply
-  active: string;
-  button: string;
-  buttonWrapper: string;
+export interface DraftJsBaseButtonProps {
+  children(props: {
+    onClick: MouseEventHandler;
+    isActive: boolean;
+    onMouseDown: MouseEventHandler;
+  }): ReactNode;
 }
 
-export interface DraftJsButtonProps {
-  theme?: DraftJsButtonTheme;
-}
-
-export interface DraftJsBlockAlignmentButtonProps extends DraftJsButtonProps {
+export interface DraftJsBlockAlignmentButtonProps
+  extends DraftJsBaseButtonProps {
   alignment: string;
 
   setAlignment(alignment: string): void;
@@ -22,38 +20,42 @@ type DraftJsBlockAlignmentButtonType = ComponentType<
   DraftJsBlockAlignmentButtonProps
 >;
 
-export const AlignBlockCenterButton: DraftJsBlockAlignmentButtonType;
-export const AlignBlockDefaultButton: DraftJsBlockAlignmentButtonType;
 export const AlignBlockLeftButton: DraftJsBlockAlignmentButtonType;
 export const AlignBlockRightButton: DraftJsBlockAlignmentButtonType;
+export const AlignBlockCenterButton: DraftJsBlockAlignmentButtonType;
+export const AlignBlockDefaultButton: DraftJsBlockAlignmentButtonType;
 
-export interface DraftJsStyleButtonProps extends DraftJsButtonProps {
+export interface DraftJsBlockStyleButtonProps extends DraftJsBaseButtonProps {
   setEditorState(editorState: EditorState): void;
 
   getEditorState(): EditorState;
 }
 
-type DraftJsStyleButtonType = ComponentType<DraftJsStyleButtonProps>;
+type DraftJsBlockStyleButtonType = ComponentType<DraftJsBlockStyleButtonProps>;
 
 export const createBlockStyleButton: (
-  alignment: string,
-  children: ReactNode
-) => DraftJsStyleButtonType;
-export const createInlineStyleButton: (
-  alignment: string,
-  children: ReactNode
-) => DraftJsStyleButtonType;
+  blockType: DraftBlockType
+) => DraftJsBlockStyleButtonType;
 
-export const BlockquoteButton: DraftJsStyleButtonType;
-export const BoldButton: DraftJsStyleButtonType;
-export const CodeBlockButton: DraftJsStyleButtonType;
-export const CodeButton: DraftJsStyleButtonType;
-export const HeadlineOneButton: DraftJsStyleButtonType;
-export const HeadlineThreeButton: DraftJsStyleButtonType;
-export const HeadlineTwoButton: DraftJsStyleButtonType;
-export const ItalicButton: DraftJsStyleButtonType;
-export const OrderedListButton: DraftJsStyleButtonType;
-export const SubButton: DraftJsStyleButtonType;
-export const SupButton: DraftJsStyleButtonType;
-export const UnderlineButton: DraftJsStyleButtonType;
-export const UnorderedListButton: DraftJsStyleButtonType;
+export const createInlineStyleButton: (
+  inlineStyle: string
+) => DraftJsBlockStyleButtonType;
+
+export const createBlockAlignmentButton: (
+  alignment: string
+) => DraftJsBlockAlignmentButtonType;
+
+export const BlockquoteButton: DraftJsBlockStyleButtonType;
+export const CodeBlockButton: DraftJsBlockStyleButtonType;
+export const HeadlineOneButton: DraftJsBlockStyleButtonType;
+export const HeadlineThreeButton: DraftJsBlockStyleButtonType;
+export const HeadlineTwoButton: DraftJsBlockStyleButtonType;
+export const CodeButton: DraftJsBlockStyleButtonType;
+export const OrderedListButton: DraftJsBlockStyleButtonType;
+export const UnorderedListButton: DraftJsBlockStyleButtonType;
+
+export const BoldButton: DraftJsBlockStyleButtonType;
+export const ItalicButton: DraftJsBlockStyleButtonType;
+export const SubButton: DraftJsBlockStyleButtonType;
+export const SupButton: DraftJsBlockStyleButtonType;
+export const UnderlineButton: DraftJsBlockStyleButtonType;
