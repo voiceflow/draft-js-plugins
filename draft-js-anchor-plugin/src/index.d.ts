@@ -1,21 +1,15 @@
-import { EditorPlugin } from "draft-js-plugins-editor";
-import { AnchorHTMLAttributes, ComponentType } from "react";
-
-export interface AnchorPluginTheme {
-  link?: string;
-  input?: string;
-  inputInvalid?: string;
-}
+import { EditorPlugin } from 'draft-js-plugins-editor';
+import { EditorState } from 'draft-js';
+import { AnchorHTMLAttributes, ComponentType } from 'react';
 
 export interface AnchorPluginConfig {
-  theme?: AnchorPluginTheme;
-  placeholder?: string;
-  Link?: ComponentType<AnchorHTMLAttributes<HTMLAnchorElement>>;
-  linkTarget?: string;
+  Link: ComponentType<{ href: string }>;
 }
 
 export type AnchorPlugin = EditorPlugin & {
-  LinkButton: ComponentType<unknown>;
+  hasLinkAtSelection: (editorState: EditorState) => boolean;
+  createLinkAtSelection: (editorState: EditorState, url: string) => EditorState;
+  removeLinkAtSelection: (editorState: EditorState) => EditorState;
 };
 
 declare const createAnchorPlugin: (config: AnchorPluginConfig) => AnchorPlugin;

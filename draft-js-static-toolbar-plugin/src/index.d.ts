@@ -6,18 +6,21 @@ export interface ToolbarProps {
   children(externalProps: DraftJsBlockStyleButtonProps): ReactNode;
 }
 
+export interface ToolBarPluginStore {
+  getItem: <T = any>(key: string) => T;
+  updateItem: <T = any>(key: string, item: T) => void;
+  subscribeToItem: <T = any>(key: string, callback: (item: T) => void) => void;
+  unsubscribeFromItem: <T = any>(
+    key: string,
+    callback: (item: T) => void
+  ) => void;
+}
+
 export type StaticToolBarPlugin = EditorPlugin & {
+  store: ToolBarPluginStore;
   Toolbar: ComponentType<ToolbarProps>;
 };
 
 declare const createStaticToolbarPlugin: () => StaticToolBarPlugin;
 
 export default createStaticToolbarPlugin;
-
-export interface SeparatorProps {
-  className?: string;
-}
-
-declare const Separator: (props: SeparatorProps) => JSX.Element;
-
-export { Separator };

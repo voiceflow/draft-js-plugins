@@ -1,10 +1,10 @@
 {
-  "name": "@voiceflow/draft-js-static-toolbar-plugin",
-  "version": "3.3.19",
-  "description": "Static Toolbar Plugin for DraftJS",
+  "name": "@voiceflow/draft-js-fake-selection",
+  "version": "3.3.34",
+  "description": "Fake selection for DraftJS",
   "author": {
-    "name": "Julian Krispel",
-    "email": "julian@reactrocket.com"
+    "name": "Nik Graf",
+    "email": "nik@nikgraf.com"
   },
   "repository": {
     "type": "git",
@@ -36,7 +36,6 @@
   "license": "MIT",
   "dependencies": {},
   "peerDependencies": {
-    "@voiceflow/draft-js-buttons": "3.3.15",
     "draft-js": "^0.10.1 || ^0.11.0",
     "draft-js-plugins-editor": "3.0.0",
     "react": "^16.3.0"

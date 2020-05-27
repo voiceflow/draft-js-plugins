@@ -1,6 +1,6 @@
 {
-  "name": "draft-js-anchor-plugin",
-  "version": "2.0.3",
+  "name": "@voiceflow/draft-js-anchor-plugin",
+  "version": "3.3.15",
   "description": "Link Plugin for DraftJS",
   "author": {
     "name": "Jan Amann",
@@ -30,19 +30,16 @@
   ],
   "scripts": {
     "clean": "../node_modules/.bin/rimraf lib",
-    "build": "yarn clean && yarn build:js && yarn build:css && yarn build:ts",
+    "build": "yarn clean && yarn build:js && yarn build:ts",
     "build:js": "../node_modules/.bin/rollup --config ../rollup.config.js",
     "build:ts": "../node_modules/.bin/cpx src/*.d.ts lib/",
-    "build:css": "node ../scripts/build-css.js $(pwd)",
     "prepublish": "yarn build"
   },
   "license": "MIT",
   "dependencies": {
-    "clsx": "^1.0.4",
-    "draft-js-plugins-utils": "2.0.2",
-    "prepend-http": "1.0.4",
-    "prop-types": "^15.5.8",
-    "tlds": "^1.197.0"
+    "draft-js": "^0.10.1 || ^0.11.0",
+    "draft-js-plugins-editor": "3.0.0",
+    "draft-js-plugins-utils": "2.0.2"
   },
   "peerDependencies": {
     "draft-js": "^0.10.1 || ^0.11.0",

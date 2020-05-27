@@ -1,35 +1,14 @@
-import React from 'react';
 import EditorUtils from 'draft-js-plugins-utils';
-import DefaultLink from './components/Link';
-import LinkButton from './components/LinkButton';
+
+import createLink from './utils/createLink';
+
 import linkStrategy, { matchesEntityType } from './linkStrategy';
-import { defaultTheme } from './theme.js';
 
-export default (config = {}) => {
-  const { theme = defaultTheme, placeholder, Link, linkTarget } = config;
-
+export default ({ Link }) => {
   const store = {
     getEditorState: undefined,
     setEditorState: undefined,
   };
-
-  const DecoratedDefaultLink = props => (
-    <DefaultLink {...props} className={theme.link} target={linkTarget} />
-  );
-
-  const DecoratedLinkButton = props => (
-    <LinkButton
-      {...props}
-      ownTheme={theme}
-      store={store}
-      placeholder={placeholder}
-      onRemoveLinkAtSelection={() =>
-        store.setEditorState(
-          EditorUtils.removeLinkAtSelection(store.getEditorState())
-        )
-      }
-    />
-  );
 
   return {
     initialize: ({ getEditorState, setEditorState }) => {
@@ -40,11 +19,19 @@ export default (config = {}) => {
     decorators: [
       {
         strategy: linkStrategy,
+        component: createLink(Link),
         matchesEntityType,
-        component: Link || DecoratedDefaultLink,
       },
     ],
 
-    LinkButton: DecoratedLinkButton,
+    createLinkAtSelection: (editorState, url) =>
+      EditorUtils.createLinkAtSelection(editorState, url),
+
+    removeLinkAtSelection: editorState => {
+      EditorUtils.removeLinkAtSelection(editorState);
+    },
+
+    hasLinkAtSelection: editorState =>
+      EditorUtils.hasEntity(editorState, 'LINK'),
   };
 };

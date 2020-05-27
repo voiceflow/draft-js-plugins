@@ -8,6 +8,8 @@ export default () => {
   const StaticToolbar = props => <Toolbar {...props} store={store} />;
 
   return {
+    store,
+
     initialize: ({ getEditorState, setEditorState }) => {
       store.updateItem('getEditorState', getEditorState);
       store.updateItem('setEditorState', setEditorState);
