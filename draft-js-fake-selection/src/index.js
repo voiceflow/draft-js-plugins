@@ -43,22 +43,26 @@ export default () => {
 
       let content = editorState.getCurrentContent();
 
-      const entityKey = utils.getCurrentEntityKey(editorState);
+      const entity = utils.getCurrentEntity(editorState);
 
-      if (entityKey) {
-        content = content.mergeEntityData(entityKey, {
-          fakeSelectionApplied: true,
-        });
+      if (entity) {
+        content = content.createEntity(
+          entity.getType(),
+          entity.getMutability() || 'MUTABLE',
+          Object.assign(entity.getData() || {}, {
+            fakeSelectionApplied: true,
+          })
+        );
       } else {
         content = content.createEntity(FAKE_SELECTION_ENTITY, 'MUTABLE', {
           fakeSelectionApplied: true,
         });
-
-        const key = content.getLastCreatedEntityKey();
-        const selection = editorState.getSelection();
-
-        content = Modifier.applyEntity(content, selection, key);
       }
+
+      const key = content.getLastCreatedEntityKey();
+      const selection = editorState.getSelection();
+
+      content = Modifier.applyEntity(content, selection, key);
 
       return EditorState.push(editorState, content, 'apply-entity');
     },
