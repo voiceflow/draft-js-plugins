@@ -41,6 +41,11 @@ export const createInlineStyleButton: (
   inlineStyle: string
 ) => DraftJsBlockStyleButtonType;
 
+export const toggleInlineStyle: (
+  editorState: EditorState,
+  inlineStyle: string
+) => EditorState;
+
 export const createBlockAlignmentButton: (
   alignment: string
 ) => DraftJsBlockAlignmentButtonType;

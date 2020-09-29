@@ -1,5 +1,6 @@
 import createBlockStyleButton from './utils/createBlockStyleButton';
 import createInlineStyleButton from './utils/createInlineStyleButton';
+import toggleInlineStyle from './utils/toggleInlineStyle';
 import ItalicButton from './components/ItalicButton';
 import BoldButton from './components/BoldButton';
 import CodeButton from './components/CodeButton';
@@ -21,6 +22,7 @@ import SupButton from './components/SupButton';
 export {
   createBlockStyleButton,
   createInlineStyleButton,
+  toggleInlineStyle,
   ItalicButton,
   BoldButton,
   SupButton,
