@@ -27,9 +27,8 @@ export default ({ Link }) => {
     createLinkAtSelection: (editorState, url) =>
       EditorUtils.createLinkAtSelection(editorState, url),
 
-    removeLinkAtSelection: editorState => {
-      EditorUtils.removeLinkAtSelection(editorState);
-    },
+    removeLinkAtSelection: editorState =>
+      EditorUtils.removeLinkAtSelection(editorState),
 
     hasLinkAtSelection: editorState =>
       EditorUtils.hasEntity(editorState, 'LINK'),
