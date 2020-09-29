@@ -1,6 +1,6 @@
 {
   "name": "@voiceflow/draft-js-fake-selection",
-  "version": "3.3.34",
+  "version": "3.3.35",
   "description": "Fake selection for DraftJS",
   "author": {
     "name": "Nik Graf",
