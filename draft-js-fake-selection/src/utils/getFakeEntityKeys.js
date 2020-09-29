@@ -1,5 +1,3 @@
-import { FAKE_SELECTION_ENTITY } from '../constants';
-
 const getFakeEntityKeys = editorState => {
   const content = editorState.getCurrentContent();
   const blockMap = content.getBlockMap();
@@ -14,7 +12,9 @@ const getFakeEntityKeys = editorState => {
       const entity =
         key !== null && key !== undefined && content.getEntity(key);
 
-      if (entity && entity.getType() === FAKE_SELECTION_ENTITY) {
+      const data = (entity && entity.getData()) || {};
+
+      if (data.fakeSelectionApplied) {
         entityKeys.add(key);
       }
     });

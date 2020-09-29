@@ -1,13 +1,10 @@
-import { FAKE_SELECTION_ENTITY } from '../constants';
-
 const fakeSelectionStrategy = (contentBlock, callback, contentState) => {
   contentBlock.findEntityRanges(character => {
     const entityKey = character.getEntity();
+    const entity =
+      (entityKey !== null && contentState.getEntity(entityKey).getData()) || {};
 
-    return (
-      entityKey !== null &&
-      contentState.getEntity(entityKey).getType() === FAKE_SELECTION_ENTITY
-    );
+    return entity.fakeSelectionApplied;
   }, callback);
 };
 

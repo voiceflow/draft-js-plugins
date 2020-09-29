@@ -1,5 +1,6 @@
 import React from 'react';
 import { EditorState, Modifier } from 'draft-js';
+import utils from 'draft-js-plugins-utils';
 
 import { FAKE_SELECTION_ENTITY } from './constants';
 
@@ -42,14 +43,22 @@ export default () => {
 
       let content = editorState.getCurrentContent();
 
-      content = content.createEntity(FAKE_SELECTION_ENTITY, 'MUTABLE', {
-        selected: true,
-      });
+      const entityKey = utils.getCurrentEntityKey(editorState);
 
-      const key = content.getLastCreatedEntityKey();
-      const selection = editorState.getSelection();
+      if (entityKey) {
+        content = content.mergeEntityData(entityKey, {
+          fakeSelectionApplied: true,
+        });
+      } else {
+        content = content.createEntity(FAKE_SELECTION_ENTITY, 'MUTABLE', {
+          fakeSelectionApplied: true,
+        });
 
-      content = Modifier.applyEntity(content, selection, key);
+        const key = content.getLastCreatedEntityKey();
+        const selection = editorState.getSelection();
+
+        content = Modifier.applyEntity(content, selection, key);
+      }
 
       return EditorState.push(editorState, content, 'apply-entity');
     },
@@ -60,7 +69,7 @@ export default () => {
       let content = editorState.getCurrentContent();
 
       entityKeys.forEach(key => {
-        content = content.mergeEntityData(key, { selected: false });
+        content = content.mergeEntityData(key, { fakeSelectionApplied: false });
       });
 
       return EditorState.forceSelection(

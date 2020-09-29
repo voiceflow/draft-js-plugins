@@ -34,7 +34,9 @@
     "prepublish": "yarn build"
   },
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "draft-js-plugins-utils": "2.0.2"
+  },
   "peerDependencies": {
     "draft-js": "^0.10.1 || ^0.11.0",
     "draft-js-plugins-editor": "3.0.0",
