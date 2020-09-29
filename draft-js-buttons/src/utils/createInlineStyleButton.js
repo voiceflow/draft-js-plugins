@@ -10,7 +10,7 @@ export default ({ style }) => ({
   const onClick = React.useCallback(e => {
     e.preventDefault();
 
-    setEditorState(toggleInlineStyle(getEditorState()));
+    setEditorState(toggleInlineStyle(getEditorState(), style));
   }, []);
 
   const onMouseDown = React.useCallback(e => {
